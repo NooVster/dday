@@ -1,0 +1,178 @@
+repeat wait() until game:IsLoaded()
+
+-- Fail checks
+if game.PlaceId ~= 901793731 then
+    game.Players.LocalPlayer:Kick("D-Day Destroyer only works on D-Day .")
+    return
+end
+
+if getgenv().ddestroyer_executed == true then
+    game.Players.LocalPlayer:Kick("DDestroyer was already executed once.")
+    return
+else
+    getgenv().ddestroyer_executed = true
+end
+
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local FrameworkLib = require(game:GetService("ReplicatedStorage"):WaitForChild("Modules"):WaitForChild("Universal"):WaitForChild("Framework"))
+
+-- Needed map things
+local map = workspace:WaitForChild("Map")
+local vegetation = workspace:WaitForChild("Vegetation")
+local map_boundaries = workspace:WaitForChild("Map_Boundaries")
+local boundaries = workspace:WaitForChild("Boundaries")
+local helmet_crates = workspace:WaitForChild("Helmet_Crates")
+local medic_bags = workspace:WaitForChild("Medic_Bags")
+
+-- Settings
+local can_shoot = true
+
+-- Gun settings X
+getgenv().everygunauto = false
+getgenv().nocamerashake = false
+getgenv().nospread = false
+getgenv().infiniteammo = false
+getgenv().aimview_tog = false
+getgenv().aimview = 0
+
+-- Cheat functions
+-- COOL GUN STUFF
+local function setGunSettings(gun)
+    if gun == nil or not gun:IsA("Tool") then
+        return
+    end
+    local gun_info = FrameworkLib.weapons:FindFirstChild(gun.Name)
+    if not gun_info then
+        return
+    end
+    local gun_settings = gun_info:FindFirstChild("Setting")
+    if not gun_settings then
+        return
+    end
+    gun_settings = require(gun_settings)
+
+    local unequipped = false
+    local unequipped_e 
+    unequipped_e = gun.Unequipped:Connect(function()
+        unequipped = true
+        unequipped_e:Disconnect()
+    end)
+
+    local gun_script = gun:FindFirstChild("GunScript_Local")
+    if not gun_script then
+        return
+    end
+    local script_env = getsenv(gun_script)
+
+    local ToolAction = script_env.ToolAction
+    local DetermineSpread = script_env.DetermineSpread
+
+    if getgenv().everygunauto then
+        local table_ = getupvalue(ToolAction, 10)
+        table_.Auto = true
+        setupvalue(ToolAction, 10, table_)
+    end
+    
+    local fake_camera = Instance.new("Camera")
+    while not unequipped do
+        if getgenv().nocamerashake then
+            setupvalue(ToolAction, 9, fake_camera)
+        end
+        if getgenv().infiniteammo then
+            setupvalue(ToolAction, 5, gun_settings.AmmoPerClip)
+        end
+        if getgenv().aimview_tog then
+            local table_ = getupvalue(ToolAction, 10)
+            table_.AimView = getgenv().aimview
+            setupvalue(ToolAction, 10, table_)
+        end
+        wait()
+    end
+    fake_camera:Destroy()
+end
+
+player_data["character"].ChildAdded:Connect(function(child)
+    setGunSettings(child)
+end)
+
+player_data["player"].CharacterAdded:Connect(function()
+    updatePlayerData()
+    player_data["character"].ChildAdded:Connect(function(child)
+        setGunSettings(child)
+    end)
+end)
+
+
+------------------------------------------------------------------------------ GUI ------------------------------------------------------------------------------
+local ui_config = 
+{
+    WindowName = "D-DAY DESTROYER | made by mayoo",
+	Color = Color3.fromRGB(255,128,64),
+	Keybind = Enum.KeyCode.M
+}
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/AlexR32/Roblox/main/BracketV3.lua"))()
+local window = Library:CreateWindow(ui_config, game:GetService("CoreGui"))
+
+
+--===============================================================================================================================================================
+-- Main tab
+local main_tab = window:CreateTab("Main")
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+-- Gun settings section
+--[[
+getgenv().everygunauto = false
+getgenv().nocamerashake = false
+getgenv().nospread = false
+getgenv().infiniteammo = true
+getgenv().aimview_tog = false
+getgenv().aimview = 0
+]]
+local gunsettings_section = main_tab:CreateSection("Gun settings")
+
+-- everygunauto
+local everygunauto_toggle = gunsettings_section:CreateToggle("Every gun automatic", nil, function(state)
+    getgenv().everygunauto = state
+end)
+
+-- nocamerashake
+local nocamerashake_toggle = gunsettings_section:CreateToggle("No camera shake", nil, function(state)
+    getgenv().nocamerashake = state
+end)
+
+-- nospread
+local nospread_toggle = gunsettings_section:CreateToggle("No spread", nil, function(state)
+    getgenv().nospread = state
+end)
+
+-- infiniteammo
+local infiniteammo_toggle = gunsettings_section:CreateToggle("Infinite ammo", nil, function(state)
+    getgenv().infiniteammo = state
+end)
+
+-- aimview_tog
+local aimview_tog_toggle = gunsettings_section:CreateToggle("Aiming fov", nil, function(state)
+    getgenv().aimview_tog = state
+end)
+
+-- aimview
+local aimview_slider = gunsettings_section:CreateSlider("FOV", 1, 300, nil, true, function(value)
+    getgenv().aimview = value
+end)
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+local toggle_gui_section = local_player_tab:CreateSection("Toggle GUI")
+
+local ui_toggle = toggle_gui_section:CreateToggle("UI Toggle", nil, function(State)
+	window:Toggle(State)
+end)
+local ui_keybind = ui_toggle:CreateKeybind(tostring(ui_config.Keybind):gsub("Enum.KeyCode.", ""), function(key)
+	ui_config.Keybind = Enum.KeyCode[key]
+end)
+
+ui_toggle:SetState(true)
